@@ -50,11 +50,11 @@ async function fetchGoldUsdPerOz() {
 }
 
 async function fetchUsdToBtn() {
-  // BTN is pegged 1:1 to INR - use USD/INR as the practical proxy (same approach as most Ter apps)
-  const res = await fetch('https://api.frankfurter.dev/v2/latest?base=USD&symbols=INR');
+  const res = await fetch('https://open.er-api.com/v6/latest/USD');
   if (!res.ok) throw new Error('FX fetch failed: ' + res.status);
   const data = await res.json();
-  return data.rates.INR;
+  if (!data.rates || !data.rates.BTN) throw new Error('BTN rate missing from FX response');
+  return data.rates.BTN;
 }
 
 function fmt(n, d = 2) {
