@@ -1,0 +1,45 @@
+name: Gold Price Email Check
+
+on:
+  schedule:
+    # Runs every 30 minutes. GitHub's cron can lag a few minutes at busy times - that's fine here.
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}   # lets you trigger it manually from the Actions tab to test
+
+permissions:
+  contents: write   # needed so the workflow can commit updated state.json back to the repo
+
+jobs:
+  check-and-send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Ensure state file exists
+        run: |
+          mkdir -p data
+          if [ ! -f data/state.json ]; then echo '{"lastDailySendDate":null,"alertBaseline":null}' > data/state.json; fi
+
+      - name: Install dependencies
+        run: npm install nodemailer
+
+      - name: Run price check + send
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TO_EMAILS: ${{ secrets.TO_EMAILS }}
+        run: node scripts/check-and-send.mjs
+
+      - name: Commit updated state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/state.json
+          git diff --staged --quiet || git commit -m "chore: update gold tracker state [skip ci]"
+          git push
