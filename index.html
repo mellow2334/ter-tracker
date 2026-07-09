@@ -65,6 +65,31 @@
   .dot{width:5px;height:5px;border-radius:50%;background:var(--up);}
   .dot.stale{background:var(--muted);}
 
+  /* ---- Subtle corner install badge (replaces full-width button) ---- */
+  .install-badge{
+    position:fixed;bottom:16px;right:16px;z-index:40;
+    display:none;align-items:center;gap:6px;
+    background:var(--ink);color:var(--paper);
+    padding:8px 13px;font-size:11px;font-weight:600;letter-spacing:0.02em;
+    border:none;cursor:pointer;font-family:'Inter',sans-serif;
+    box-shadow:0 2px 10px rgba(0,0,0,0.18);
+    opacity:0.88;transition:opacity .15s ease;
+  }
+  .install-badge:hover{opacity:1;}
+  .install-badge svg{width:12px;height:12px;}
+
+  /* ---- Mascot: slithers along its own strip beneath the header ---- */
+  .mascot-stage{
+    position:relative;width:100%;height:52px;
+    margin-bottom:18px;overflow:visible;
+  }
+  #mascotCanvas{
+    position:absolute;top:0;left:0;width:44px;height:44px;
+    image-rendering:pixelated;image-rendering:crisp-edges;
+    cursor:pointer;
+    will-change:transform;
+  }
+
   /* ---- Hero: spot price as a ledger headline, not a card ---- */
   .spot{margin-bottom:8px;}
   .spot-label{
@@ -121,50 +146,6 @@
   #chartCanvas{width:100%;height:190px;display:block;}
   .chart-empty{color:var(--muted);font-size:12px;text-align:center;padding:44px 10px;line-height:1.6;}
 
-  /* ---- Actions: understated, text-forward, no boxy buttons ---- */
-  .actions{margin-top:34px;}
-  .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:7px;
-    padding:11px 18px;border:1px solid var(--ink);
-    background:none;color:var(--ink);font-family:'Inter',sans-serif;
-    font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:0.02em;
-    transition:background .12s ease, color .12s ease;
-  }
-  .btn:hover{background:var(--ink);color:var(--paper);}
-  .btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
-  .btn.primary{background:var(--ink);color:var(--paper);}
-  .btn.primary:hover{background:var(--gold-deep);border-color:var(--gold-deep);}
-
-  details{border-top:1px solid var(--hair);padding:0;margin-top:2px;}
-  details:last-child{border-bottom:1px solid var(--hair);}
-  summary{
-    cursor:pointer;padding:15px 2px;font-size:13px;font-weight:600;color:var(--ink);
-    list-style:none;display:flex;justify-content:space-between;align-items:center;
-    font-family:'Inter',sans-serif;
-  }
-  summary .count{color:var(--muted);font-weight:400;font-size:11.5px;}
-  summary::-webkit-details-marker{display:none;}
-  summary::after{content:"+";color:var(--gold);font-size:16px;font-weight:400;}
-  details[open] summary::after{content:"–";}
-  .details-body{padding:2px 2px 18px;}
-  .details-hint{font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 14px;}
-
-  .friend-row{display:flex;gap:8px;margin-bottom:9px;}
-  .friend-row input{
-    flex:1;background:var(--paper-2);border:1px solid var(--hair-strong);
-    padding:9px 11px;color:var(--ink);font-family:'Inter',sans-serif;font-size:13px;
-  }
-  .friend-row input:focus-visible{outline:2px solid var(--gold);}
-  .friend-row button{
-    background:none;border:1px solid var(--hair-strong);color:var(--down);
-    width:36px;cursor:pointer;font-size:15px;
-  }
-  .chip-add{
-    background:none;border:1px dashed var(--hair-strong);color:var(--gold-deep);
-    padding:9px 12px;font-size:12px;cursor:pointer;width:100%;margin-bottom:12px;
-    font-family:'Inter',sans-serif;font-weight:600;
-  }
-
   .footer-note{margin-top:30px;font-size:11px;color:var(--muted);line-height:1.7;text-align:center;}
   .footer-note a{color:var(--gold-deep);}
 
@@ -197,7 +178,14 @@
     <div class="live-pill"><span class="dot" id="liveDot"></span><span id="liveText">connecting</span></div>
   </header>
 
-  <button class="btn" id="installBtn" style="display:none;width:100%;margin-bottom:22px;">Install Ter Tracker</button>
+  <div class="mascot-stage" id="mascotStage" title="Ter">
+    <canvas id="mascotCanvas" width="20" height="20"></canvas>
+  </div>
+
+  <button class="install-badge" id="installBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+    Install
+  </button>
 
   <div class="spot">
     <div class="spot-label">Gold Spot · Per Troy Ounce</div>
@@ -239,25 +227,6 @@
     <div class="chart-empty" id="chartEmpty" style="display:none;">Gathering price points as the app runs — leave it open to build a live trend, or switch to 30d/90d for history.</div>
   </div>
 
-  <div class="actions">
-    <details>
-      <summary>Send to friends <span class="count" id="friendCountLabel">0 added</span></summary>
-      <div class="details-body">
-        <div id="friendList"></div>
-        <button class="chip-add" id="addFriendBtn">+ Add a friend's email</button>
-        <button class="btn primary" id="sendFriendsBtn" style="width:100%;">Draft update to friends</button>
-      </div>
-    </details>
-
-    <details>
-      <summary>Price alert <span class="count" id="alertStatusLabel">off</span></summary>
-      <div class="details-body">
-        <p class="details-hint">Get an on-screen + email draft alert when gold moves ±1% from the price when you turn this on. Keep this tab open — alerts only fire while the app is running.</p>
-        <button class="btn primary" id="alertToggleBtn" style="width:100%;">Turn on 1% alert</button>
-      </div>
-    </details>
-  </div>
-
   <div class="footer-note">
     Gold spot via gold-api.com · FX via open.er-api.com (BTN pegged to INR)<br>
     Emails open your mail app pre-filled — nothing sends automatically while this tab is closed.
@@ -277,9 +246,7 @@
     prevOzUsd: null,
     usdBtn: null,
     history: [], // {t, ozUsd}
-    alertOn: false,
-    alertBaseline: null,
-    friends: []
+    mood: 'neutral' // 'neutral' | 'happy' | 'sad', driven by price change
   };
 
   const $ = (id) => document.getElementById(id);
@@ -323,6 +290,11 @@
       const badge = $('changeBadge');
       badge.textContent = (pct >= 0 ? '▲ ' : '▼ ') + Math.abs(pct).toFixed(2) + '%';
       badge.className = 'change-badge ' + (pct >= 0 ? 'up' : 'down');
+
+      // Mascot reacts: happy on price up, sad on price down, back to neutral shortly after
+      state.mood = pct >= 0 ? 'happy' : 'sad';
+      clearTimeout(state._moodTimer);
+      state._moodTimer = setTimeout(() => { state.mood = 'neutral'; drawMascot(); }, 4000);
     }
 
     const gramUsd = ozUsd / GRAMS_PER_OZ;
@@ -336,19 +308,8 @@
     $('tolaBTN').innerHTML = '<span class="ccy">Nu.</span>' + fmt(tolaBtn);
     $('fxRate').textContent = 'USD/BTN ' + fmt(usdBtn, 3);
 
-    checkAlert(gramUsd);
+    drawMascot();
     drawChart();
-  }
-
-  function checkAlert(gramUsd){
-    if(!state.alertOn) return;
-    if(state.alertBaseline == null){ state.alertBaseline = state.ozUsd; return; }
-    const pct = ((state.ozUsd - state.alertBaseline) / state.alertBaseline) * 100;
-    if(Math.abs(pct) >= 1){
-      toast('Gold moved ' + pct.toFixed(2) + '% — alert triggered');
-      draftAlertEmail(pct);
-      state.alertBaseline = state.ozUsd; // reset baseline after firing
-    }
   }
 
   function mailto(subject, body, to){
@@ -377,41 +338,162 @@ USD/BTN rate: ${fmt(usdBtn,3)}
 — Sent from Ter Tracker`;
   }
 
-  function draftAlertEmail(pct){
-    const body = buildSummary() + `\n\nALERT: Gold price moved ${pct.toFixed(2)}% since last checkpoint.`;
-    mailto('⚡ Gold Price Alert — ' + pct.toFixed(2) + '% move', body, '');
+  // ---- Mascot: pixel-art snake, slithers, mouse-aware, mood-reactive ----
+  const MASCOT_K='#2b1d10', MASCOT_B='#f6e4b8', MASCOT_O='#e8a15c', MASCOT_W='#ffffff';
+  const mascotBase = [
+    "....................",
+    "....KKKKKKKK........",
+    "...KBBBBBBBBK.......",
+    "..KBBBBBBBBBBK......",
+    ".KBBBBBBBBBBBBK.....",
+    ".KBB..BBBB..BBK.KK..",
+    ".KBB..BBBB..BBK.KBK.",
+    ".KBB..BBBB..BBK.KBK.",
+    ".KBBBBBBBBBBBBK.KBK.",
+    "..KBBBBBBBBBBBK.KBK.",
+    "..KKBBBBBBBBKKK.KBK.",
+    "...KKBBBBBBKK.KBBK.",
+    ".....KBBBBK.KBBOOBK.",
+    "....KBBBBBBKBBBBBBK.",
+    "...KBBBBBBBBBBOOBBK.",
+    "...KBBBBBBBBBBBBBBK.",
+    "..KBBBOOBBBBBBBOOBK.",
+    "..KBBBBBBBBBBBBBBK..",
+    "...KBBBBBBBBBBBBK...",
+    "....KKKKKKKKKKKK....",
+  ];
+
+  let mascotBlink = false;
+  let mascotPupilOffset = {x:0, y:0};
+
+  function mpx(ctx,x,y,c){ ctx.fillStyle=c; ctx.fillRect(x,y,1,1); }
+
+  function drawMascot(){
+    const canvas = $('mascotCanvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,20,20);
+
+    for(let y=0;y<mascotBase.length;y++){
+      for(let x=0;x<mascotBase[y].length;x++){
+        const ch = mascotBase[y][x];
+        let color=null;
+        if(ch==='K') color=MASCOT_K;
+        else if(ch==='B') color=MASCOT_B;
+        else if(ch==='O') color=MASCOT_O;
+        if(color) mpx(ctx,x,y,color);
+      }
+    }
+
+    const ox = mascotPupilOffset.x, oy = mascotPupilOffset.y;
+    const mood = state.mood;
+
+    if(mascotBlink){
+      mpx(ctx,3+ox,6+oy,MASCOT_K); mpx(ctx,4+ox,6+oy,MASCOT_K);
+      mpx(ctx,9+ox,6+oy,MASCOT_K); mpx(ctx,10+ox,6+oy,MASCOT_K);
+    } else {
+      mpx(ctx,3+ox,5+oy,MASCOT_K); mpx(ctx,4+ox,5+oy,MASCOT_K);
+      mpx(ctx,3+ox,6+oy,MASCOT_K); mpx(ctx,4+ox,6+oy,MASCOT_K);
+      mpx(ctx,4+ox,5+oy,MASCOT_W);
+
+      mpx(ctx,9+ox,5+oy,MASCOT_K); mpx(ctx,10+ox,5+oy,MASCOT_K);
+      mpx(ctx,9+ox,6+oy,MASCOT_K); mpx(ctx,10+ox,6+oy,MASCOT_K);
+      mpx(ctx,10+ox,5+oy,MASCOT_W);
+    }
+
+    if(mood==='happy'){
+      mpx(ctx,5,8,MASCOT_K); mpx(ctx,6,9,MASCOT_K); mpx(ctx,7,9,MASCOT_K); mpx(ctx,8,8,MASCOT_K);
+    } else if(mood==='sad'){
+      mpx(ctx,5,9,MASCOT_K); mpx(ctx,6,8,MASCOT_K); mpx(ctx,7,8,MASCOT_K); mpx(ctx,8,9,MASCOT_K);
+    } else {
+      mpx(ctx,6,8,MASCOT_K); mpx(ctx,7,8,MASCOT_K);
+    }
   }
 
-  // Friends list
-  function renderFriends(){
-    const list = $('friendList');
-    list.innerHTML = '';
-    state.friends.forEach((email, i) => {
-      const row = document.createElement('div');
-      row.className = 'friend-row';
-      row.innerHTML = `<input type="email" placeholder="friend@email.com" value="${email}"><button aria-label="Remove">×</button>`;
-      row.querySelector('input').addEventListener('input', e => state.friends[i] = e.target.value);
-      row.querySelector('button').addEventListener('click', () => { state.friends.splice(i,1); renderFriends(); });
-      list.appendChild(row);
-    });
-    $('friendCountLabel').textContent = state.friends.length + ' added';
+  // ---- Slither movement: drifts to random points within its stage, pauses, repeats ----
+  const mascotStage = $('mascotStage');
+  const mascotCanvas = $('mascotCanvas');
+  let mascotX = 10;          // current left position (px, within stage)
+  let mascotTargetX = 10;    // where it's drifting toward
+  let mascotFacing = 1;      // 1 = facing right, -1 = facing left
+  let mascotBobPhase = Math.random() * Math.PI * 2;
+  let lastMouseX = null, lastMouseY = null;
+  let mascotStartle = 0;     // brief extra offset when cursor gets close
+
+  function pickNewTarget(){
+    if(!mascotStage) return;
+    const stageW = mascotStage.clientWidth || 300;
+    const maxX = Math.max(0, stageW - 44);
+    mascotTargetX = Math.random() * maxX;
   }
-  $('addFriendBtn').addEventListener('click', () => { state.friends.push(''); renderFriends(); });
-  $('sendFriendsBtn').addEventListener('click', () => {
-    if(state.ozUsd == null) return toast('Still loading price…');
-    const valid = state.friends.filter(f => f && f.includes('@'));
-    if(valid.length === 0) return toast('Add at least one valid email first');
-    mailto('Today\'s Gold Price — from Ter Tracker', buildSummary(), valid.join(','));
+
+  function mascotTick(){
+    if(!mascotStage || !mascotCanvas){ requestAnimationFrame(mascotTick); return; }
+
+    // Ease toward target
+    const dx = mascotTargetX - mascotX;
+    if(Math.abs(dx) > 0.5){
+      mascotFacing = dx > 0 ? 1 : -1;
+      mascotX += dx * 0.02; // slow, smooth slither speed
+    }
+
+    // Gentle vertical bob while moving, like a slow sine wave
+    mascotBobPhase += 0.03;
+    const bobY = Math.sin(mascotBobPhase) * 3;
+
+    // Startle offset decays back to 0 (adds a little upward "pop" when cursor gets close)
+    mascotStartle *= 0.9;
+
+    mascotCanvas.style.transform =
+      `translate(${mascotX}px, ${bobY - mascotStartle}px) scaleX(${mascotFacing})`;
+
+    requestAnimationFrame(mascotTick);
+  }
+
+  pickNewTarget();
+  requestAnimationFrame(mascotTick);
+
+  // Pick a fresh wander target periodically
+  setInterval(pickNewTarget, 3500 + Math.random()*2000);
+
+  // Eyes track the cursor; if cursor gets close, snake "startles" away slightly
+  document.addEventListener('mousemove', (e) => {
+    if(!mascotCanvas) return;
+    const rect = mascotCanvas.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+    const dx = e.clientX - cx, dy = e.clientY - cy;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    mascotPupilOffset.x = Math.abs(dx) < 10 ? 0 : (dx > 0 ? 1 : -1);
+    mascotPupilOffset.y = Math.abs(dy) < 10 ? 0 : (dy > 0 ? 1 : -1);
+    drawMascot();
+
+    if(dist < 70){
+      mascotStartle = Math.max(mascotStartle, (70 - dist) / 3);
+      // Occasionally pick a fresh target when startled, so it visibly darts away
+      if(dist < 40 && Math.random() < 0.03) pickNewTarget();
+    }
+
+    lastMouseX = e.clientX; lastMouseY = e.clientY;
   });
 
-  // Alert toggle
-  $('alertToggleBtn').addEventListener('click', () => {
-    state.alertOn = !state.alertOn;
-    state.alertBaseline = state.alertOn ? state.ozUsd : null;
-    $('alertToggleBtn').textContent = state.alertOn ? 'Turn off alert' : 'Turn on 1% alert';
-    $('alertStatusLabel').textContent = state.alertOn ? 'on' : 'off';
-    toast(state.alertOn ? 'Alert armed — watching for ±1% moves' : 'Alert turned off');
+  // Idle blink every few seconds
+  setInterval(() => {
+    mascotBlink = true; drawMascot();
+    setTimeout(() => { mascotBlink = false; drawMascot(); }, 140);
+  }, 4200);
+
+  // Tap/click mascot: brief happy wiggle, just for fun
+  mascotCanvas?.addEventListener('click', () => {
+    const prevMood = state.mood;
+    state.mood = 'happy';
+    drawMascot();
+    mascotStartle = Math.max(mascotStartle, 12);
+    setTimeout(() => { state.mood = prevMood; drawMascot(); }, 1200);
   });
+
+  drawMascot();
 
   // Chart
   let currentRange = 'live';
@@ -555,7 +637,6 @@ USD/BTN rate: ${fmt(usdBtn,3)}
 
   loadAll();
   setInterval(loadAll, 15000);
-  renderFriends();
 
   // ---- PWA: service worker + install prompt ----
   if('serviceWorker' in navigator){
@@ -570,7 +651,7 @@ USD/BTN rate: ${fmt(usdBtn,3)}
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    installBtn.style.display = 'block';
+    installBtn.style.display = 'flex';
   });
 
   installBtn?.addEventListener('click', async () => {
