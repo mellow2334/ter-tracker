@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ter Tracker — Gold Rate Sheet</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1C1A16">
+<meta name="background-color" content="#FBF9F4">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ter Tracker">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=Source+Code+Pro:wght@400;500;600&display=swap');
+
+  :root{
+    --paper:#FBF9F4;
+    --paper-2:#F3EEE3;
+    --ink:#1C1A16;
+    --ink-soft:#4A463D;
+    --hair:#DED5BE;
+    --hair-strong:#C9BD9E;
+    --gold:#8C6A2F;
+    --gold-deep:#6B5023;
+    --muted:#8A8272;
+    --up:#4F6E52;
+    --down:#9B4D36;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{max-width:600px;margin:0 auto;padding:36px 22px 60px;}
+
+  /* ---- Header ---- */
+  header{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--ink);
+  }
+  .brand h1{
+    font-family:'Source Serif 4',serif;font-weight:600;font-size:23px;margin:0;
+    letter-spacing:-0.2px;
+  }
+  .brand .kicker{
+    font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);
+    font-weight:600;display:block;margin-bottom:5px;
+  }
+  .brand .sub{font-size:11.5px;color:var(--muted);display:block;margin-top:3px;font-style:italic;font-family:'Source Serif 4',serif;}
+  .live-pill{
+    display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted);
+    letter-spacing:0.06em;text-transform:uppercase;font-weight:600;
+    padding-bottom:2px;
+  }
+  .dot{width:5px;height:5px;border-radius:50%;background:var(--up);}
+  .dot.stale{background:var(--muted);}
+
+  /* ---- Hero: spot price as a ledger headline, not a card ---- */
+  .spot{margin-bottom:8px;}
+  .spot-label{
+    font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);
+    margin-bottom:8px;
+  }
+  .spot-row{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}
+  .spot-price{
+    font-family:'Source Serif 4',serif;font-weight:600;font-size:46px;
+    letter-spacing:-1px;line-height:1;
+  }
+  .spot-unit{font-size:13px;color:var(--muted);font-family:'Inter',sans-serif;}
+  .change-badge{
+    font-family:'Source Code Pro',monospace;font-size:12.5px;font-weight:600;
+    padding:3px 0;border-bottom:1px solid currentColor;
+  }
+  .change-badge.up{color:var(--up);}
+  .change-badge.down{color:var(--down);}
+  .spot-updated{font-size:11.5px;color:var(--muted);margin-top:10px;}
+
+  /* ---- Ledger table (the signature element) ---- */
+  .ledger{margin:30px 0 6px;border-top:1px solid var(--ink);}
+  .ledger-row{
+    display:grid;grid-template-columns:1.4fr 1fr auto;gap:10px;
+    align-items:baseline;padding:14px 0;border-bottom:1px solid var(--hair);
+  }
+  .ledger-row.total{border-bottom:1px solid var(--ink);}
+  .ledger-unit{font-family:'Source Serif 4',serif;font-size:15px;}
+  .ledger-unit .grams{font-size:11px;color:var(--muted);font-family:'Inter',sans-serif;display:block;margin-top:1px;}
+  .ledger-value{
+    font-family:'Source Code Pro',monospace;font-size:17px;text-align:right;font-weight:500;
+  }
+  .ledger-value .ccy{font-size:11px;color:var(--muted);font-weight:400;margin-right:3px;font-family:'Inter',sans-serif;}
+  .ledger-note{font-size:10.5px;color:var(--muted);text-align:right;white-space:nowrap;}
+
+  /* ---- Chart section ---- */
+  .section-title{
+    font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);
+    margin:32px 0 12px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .range-toggle{display:flex;gap:2px;}
+  .range-toggle button{
+    background:none;border:none;color:var(--muted);
+    font-size:11px;padding:4px 10px;cursor:pointer;
+    font-family:'Inter',sans-serif;letter-spacing:0.04em;
+    border-bottom:1px solid transparent;
+  }
+  .range-toggle button.active{color:var(--ink);border-bottom:1px solid var(--gold);font-weight:600;}
+
+  .chart-card{
+    border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);
+    padding:18px 2px 6px;margin-bottom:8px;
+  }
+  #chartCanvas{width:100%;height:190px;display:block;}
+  .chart-empty{color:var(--muted);font-size:12px;text-align:center;padding:44px 10px;line-height:1.6;}
+
+  /* ---- Actions: understated, text-forward, no boxy buttons ---- */
+  .actions{margin-top:34px;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    padding:11px 18px;border:1px solid var(--ink);
+    background:none;color:var(--ink);font-family:'Inter',sans-serif;
+    font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:0.02em;
+    transition:background .12s ease, color .12s ease;
+  }
+  .btn:hover{background:var(--ink);color:var(--paper);}
+  .btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+  .btn.primary{background:var(--ink);color:var(--paper);}
+  .btn.primary:hover{background:var(--gold-deep);border-color:var(--gold-deep);}
+
+  details{border-top:1px solid var(--hair);padding:0;margin-top:2px;}
+  details:last-child{border-bottom:1px solid var(--hair);}
+  summary{
+    cursor:pointer;padding:15px 2px;font-size:13px;font-weight:600;color:var(--ink);
+    list-style:none;display:flex;justify-content:space-between;align-items:center;
+    font-family:'Inter',sans-serif;
+  }
+  summary .count{color:var(--muted);font-weight:400;font-size:11.5px;}
+  summary::-webkit-details-marker{display:none;}
+  summary::after{content:"+";color:var(--gold);font-size:16px;font-weight:400;}
+  details[open] summary::after{content:"–";}
+  .details-body{padding:2px 2px 18px;}
+  .details-hint{font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 14px;}
+
+  .friend-row{display:flex;gap:8px;margin-bottom:9px;}
+  .friend-row input{
+    flex:1;background:var(--paper-2);border:1px solid var(--hair-strong);
+    padding:9px 11px;color:var(--ink);font-family:'Inter',sans-serif;font-size:13px;
+  }
+  .friend-row input:focus-visible{outline:2px solid var(--gold);}
+  .friend-row button{
+    background:none;border:1px solid var(--hair-strong);color:var(--down);
+    width:36px;cursor:pointer;font-size:15px;
+  }
+  .chip-add{
+    background:none;border:1px dashed var(--hair-strong);color:var(--gold-deep);
+    padding:9px 12px;font-size:12px;cursor:pointer;width:100%;margin-bottom:12px;
+    font-family:'Inter',sans-serif;font-weight:600;
+  }
+
+  .footer-note{margin-top:30px;font-size:11px;color:var(--muted);line-height:1.7;text-align:center;}
+  .footer-note a{color:var(--gold-deep);}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:var(--paper);padding:10px 20px;
+    font-size:12px;font-weight:500;opacity:0;pointer-events:none;
+    transition:opacity .25s ease, bottom .25s ease;letter-spacing:0.02em;
+  }
+  .toast.show{opacity:1;bottom:32px;}
+
+  @media (max-width:420px){
+    .spot-price{font-size:36px;}
+    .ledger-row{grid-template-columns:1.2fr 1fr;}
+    .ledger-note{display:none;}
+  }
+
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <span class="kicker">Est. rate sheet</span>
+      <h1>Ter Tracker</h1>
+      <span class="sub">1 Ter = 0.01g gold</span>
+    </div>
+    <div class="live-pill"><span class="dot" id="liveDot"></span><span id="liveText">connecting</span></div>
+  </header>
+
+  <button class="btn" id="installBtn" style="display:none;width:100%;margin-bottom:22px;">Install Ter Tracker</button>
+
+  <div class="spot">
+    <div class="spot-label">Gold Spot · Per Troy Ounce</div>
+    <div class="spot-row">
+      <div class="spot-price" id="ozPrice">—</div>
+      <div class="change-badge" id="changeBadge">…</div>
+    </div>
+    <div class="spot-updated" id="ozSub">Fetching live price…</div>
+  </div>
+
+  <div class="ledger">
+    <div class="ledger-row">
+      <div class="ledger-unit">1 Ter<span class="grams">0.01g · digital gold unit</span></div>
+      <div class="ledger-value" id="terBTN"><span class="ccy">Nu.</span>—</div>
+      <div class="ledger-note"></div>
+    </div>
+    <div class="ledger-row">
+      <div class="ledger-unit">1 Gram<span class="grams">= 100 Ter</span></div>
+      <div class="ledger-value" id="gramBTN"><span class="ccy">Nu.</span>—</div>
+      <div class="ledger-note" id="gramUSD">$—</div>
+    </div>
+    <div class="ledger-row total">
+      <div class="ledger-unit">1 Tola<span class="grams">11.6638g · traditional unit</span></div>
+      <div class="ledger-value" id="tolaBTN"><span class="ccy">Nu.</span>—</div>
+      <div class="ledger-note" id="fxRate">USD/BTN —</div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    Trend
+    <div class="range-toggle" id="rangeToggle">
+      <button data-range="live" class="active">Live</button>
+      <button data-range="30">30d</button>
+      <button data-range="90">90d</button>
+    </div>
+  </div>
+  <div class="chart-card">
+    <canvas id="chartCanvas"></canvas>
+    <div class="chart-empty" id="chartEmpty" style="display:none;">Gathering price points as the app runs — leave it open to build a live trend, or switch to 30d/90d for history.</div>
+  </div>
+
+  <div class="actions">
+    <details>
+      <summary>Send to friends <span class="count" id="friendCountLabel">0 added</span></summary>
+      <div class="details-body">
+        <div id="friendList"></div>
+        <button class="chip-add" id="addFriendBtn">+ Add a friend's email</button>
+        <button class="btn primary" id="sendFriendsBtn" style="width:100%;">Draft update to friends</button>
+      </div>
+    </details>
+
+    <details>
+      <summary>Price alert <span class="count" id="alertStatusLabel">off</span></summary>
+      <div class="details-body">
+        <p class="details-hint">Get an on-screen + email draft alert when gold moves ±1% from the price when you turn this on. Keep this tab open — alerts only fire while the app is running.</p>
+        <button class="btn primary" id="alertToggleBtn" style="width:100%;">Turn on 1% alert</button>
+      </div>
+    </details>
+  </div>
+
+  <div class="footer-note">
+    Gold spot via gold-api.com · FX via open.er-api.com (BTN pegged to INR)<br>
+    Emails open your mail app pre-filled — nothing sends automatically while this tab is closed.
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const GRAMS_PER_OZ = 31.1034768;
+  const GRAMS_PER_TOLA = 11.6638;
+  const TER_GRAMS = 0.01;
+
+  let state = {
+    ozUsd: null,
+    prevOzUsd: null,
+    usdBtn: null,
+    history: [], // {t, ozUsd}
+    alertOn: false,
+    alertBaseline: null,
+    friends: []
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n, d=2) => n==null ? '—' : n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+
+  function toast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2600);
+  }
+
+  function setLive(ok){
+    $('liveDot').classList.toggle('stale', !ok);
+    $('liveText').textContent = ok ? 'live' : 'retrying…';
+  }
+
+  async function fetchGold(){
+    const res = await fetch('https://api.gold-api.com/price/XAU');
+    if(!res.ok) throw new Error('gold fetch failed');
+    const data = await res.json();
+    return data.price; // USD per troy oz
+  }
+
+  async function fetchFx(){
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    if(!res.ok) throw new Error('fx fetch failed');
+    const data = await res.json();
+    return data.rates.BTN;
+  }
+
+  function render(){
+    const { ozUsd, prevOzUsd, usdBtn } = state;
+    if(ozUsd == null || usdBtn == null){ return; }
+
+    $('ozPrice').textContent = '$' + fmt(ozUsd);
+    $('ozSub').textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+    if(prevOzUsd != null && prevOzUsd !== ozUsd){
+      const pct = ((ozUsd - prevOzUsd) / prevOzUsd) * 100;
+      const badge = $('changeBadge');
+      badge.textContent = (pct >= 0 ? '▲ ' : '▼ ') + Math.abs(pct).toFixed(2) + '%';
+      badge.className = 'change-badge ' + (pct >= 0 ? 'up' : 'down');
+    }
+
+    const gramUsd = ozUsd / GRAMS_PER_OZ;
+    const gramBtn = gramUsd * usdBtn;
+    const terBtn = gramBtn * TER_GRAMS;
+    const tolaBtn = gramBtn * GRAMS_PER_TOLA;
+
+    $('gramUSD').textContent = '$' + fmt(gramUsd);
+    $('gramBTN').innerHTML = '<span class="ccy">Nu.</span>' + fmt(gramBtn);
+    $('terBTN').innerHTML = '<span class="ccy">Nu.</span>' + fmt(terBtn);
+    $('tolaBTN').innerHTML = '<span class="ccy">Nu.</span>' + fmt(tolaBtn);
+    $('fxRate').textContent = 'USD/BTN ' + fmt(usdBtn, 3);
+
+    checkAlert(gramUsd);
+    drawChart();
+  }
+
+  function checkAlert(gramUsd){
+    if(!state.alertOn) return;
+    if(state.alertBaseline == null){ state.alertBaseline = state.ozUsd; return; }
+    const pct = ((state.ozUsd - state.alertBaseline) / state.alertBaseline) * 100;
+    if(Math.abs(pct) >= 1){
+      toast('Gold moved ' + pct.toFixed(2) + '% — alert triggered');
+      draftAlertEmail(pct);
+      state.alertBaseline = state.ozUsd; // reset baseline after firing
+    }
+  }
+
+  function mailto(subject, body, to){
+    const url = 'mailto:' + (to||'') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    window.location.href = url;
+  }
+
+  function buildSummary(){
+    const { ozUsd, usdBtn } = state;
+    const gramUsd = ozUsd / GRAMS_PER_OZ;
+    const gramBtn = gramUsd * usdBtn;
+    const terBtn = gramBtn * TER_GRAMS;
+    const tolaBtn = gramBtn * GRAMS_PER_TOLA;
+    const date = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    return `Ter Tracker — Gold Price Update
+${date}
+
+Gold Spot: $${fmt(ozUsd)} / troy oz
+
+1 Ter (0.01g):   Nu. ${fmt(terBtn)}
+1 Gram:          Nu. ${fmt(gramBtn)}  |  $${fmt(gramUsd)}
+1 Tola (11.66g): Nu. ${fmt(tolaBtn)}
+
+USD/BTN rate: ${fmt(usdBtn,3)}
+
+— Sent from Ter Tracker`;
+  }
+
+  function draftAlertEmail(pct){
+    const body = buildSummary() + `\n\nALERT: Gold price moved ${pct.toFixed(2)}% since last checkpoint.`;
+    mailto('⚡ Gold Price Alert — ' + pct.toFixed(2) + '% move', body, '');
+  }
+
+  // Friends list
+  function renderFriends(){
+    const list = $('friendList');
+    list.innerHTML = '';
+    state.friends.forEach((email, i) => {
+      const row = document.createElement('div');
+      row.className = 'friend-row';
+      row.innerHTML = `<input type="email" placeholder="friend@email.com" value="${email}"><button aria-label="Remove">×</button>`;
+      row.querySelector('input').addEventListener('input', e => state.friends[i] = e.target.value);
+      row.querySelector('button').addEventListener('click', () => { state.friends.splice(i,1); renderFriends(); });
+      list.appendChild(row);
+    });
+    $('friendCountLabel').textContent = state.friends.length + ' added';
+  }
+  $('addFriendBtn').addEventListener('click', () => { state.friends.push(''); renderFriends(); });
+  $('sendFriendsBtn').addEventListener('click', () => {
+    if(state.ozUsd == null) return toast('Still loading price…');
+    const valid = state.friends.filter(f => f && f.includes('@'));
+    if(valid.length === 0) return toast('Add at least one valid email first');
+    mailto('Today\'s Gold Price — from Ter Tracker', buildSummary(), valid.join(','));
+  });
+
+  // Alert toggle
+  $('alertToggleBtn').addEventListener('click', () => {
+    state.alertOn = !state.alertOn;
+    state.alertBaseline = state.alertOn ? state.ozUsd : null;
+    $('alertToggleBtn').textContent = state.alertOn ? 'Turn off alert' : 'Turn on 1% alert';
+    $('alertStatusLabel').textContent = state.alertOn ? 'on' : 'off';
+    toast(state.alertOn ? 'Alert armed — watching for ±1% moves' : 'Alert turned off');
+  });
+
+  // Chart
+  let currentRange = 'live';
+  document.querySelectorAll('#rangeToggle button').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('#rangeToggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentRange = btn.dataset.range;
+      if(currentRange !== 'live') await loadHistory(parseInt(currentRange));
+      drawChart();
+    });
+  });
+
+  async function loadHistory(days){
+    try{
+      const end = new Date();
+      const start = new Date(); start.setDate(start.getDate() - days);
+      const iso = d => d.toISOString().slice(0,10);
+      const res = await fetch(`https://api.frankfurter.dev/v2/rates?base=USD&quotes=BTN&from=${iso(start)}&to=${iso(end)}`);
+      // frankfurter has no gold; fallback: just show flat note if unavailable
+      state.historyRange = null; // gold history needs a paid endpoint; mark unavailable
+    }catch(e){ state.historyRange = null; }
+  }
+
+  function drawChart(){
+    const canvas = $('chartCanvas');
+    const emptyMsg = $('chartEmpty');
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || 560;
+    const cssH = 190;
+    canvas.width = cssW*dpr; canvas.height = cssH*dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cssW,cssH);
+
+    if(currentRange !== 'live'){
+      canvas.style.display='none';
+      emptyMsg.style.display='block';
+      emptyMsg.textContent = 'Historical gold series needs a paid data source — this app tracks live price only. Switch back to "Live" to keep building today\'s trend.';
+      return;
+    }
+
+    if(state.history.length < 2){
+      canvas.style.display='none';
+      emptyMsg.style.display='block';
+      emptyMsg.textContent = 'Gathering price points as the app runs — check back in a few refreshes to see the live trend line.';
+      return;
+    }
+    canvas.style.display='block';
+    emptyMsg.style.display='none';
+
+    const vals = state.history.map(h=>h.ozUsd);
+    const times = state.history.map(h=>h.t);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const pad = (max-min)*0.15 || Math.max(1, min*0.001);
+    const lo = min-pad, hi = max+pad;
+    const n = vals.length;
+
+    // Reserve margins for axis labels
+    const marginLeft = 58;
+    const marginRight = 6;
+    const marginTop = 10;
+    const marginBottom = 20;
+    const plotW = cssW - marginLeft - marginRight;
+    const plotH = cssH - marginTop - marginBottom;
+
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillStyle = '#8A8272';
+    ctx.strokeStyle = '#DED5BE';
+    ctx.lineWidth = 1;
+
+    // Y-axis: 4 gridlines with $ price labels
+    const ySteps = 4;
+    for(let i = 0; i <= ySteps; i++){
+      const val = lo + (hi-lo) * (i/ySteps);
+      const y = marginTop + plotH - (i/ySteps) * plotH;
+      ctx.beginPath();
+      ctx.moveTo(marginLeft, y);
+      ctx.lineTo(cssW - marginRight, y);
+      ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('$' + val.toLocaleString('en-US',{maximumFractionDigits:0}), marginLeft - 8, y);
+    }
+
+    // X-axis: first, middle, last timestamps
+    const xTicks = [0, Math.floor((n-1)/2), n-1];
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    xTicks.forEach(i => {
+      const x = marginLeft + (i/(n-1)) * plotW;
+      const label = new Date(times[i]).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      ctx.fillText(label, x, cssH - marginBottom + 5);
+    });
+
+    // Line + fill
+    ctx.beginPath();
+    vals.forEach((v,i) => {
+      const x = marginLeft + (i/(n-1)) * plotW;
+      const y = marginTop + plotH - ((v-lo)/(hi-lo)) * plotH;
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = '#8C6A2F';
+    ctx.lineWidth = 1.75;
+    ctx.lineJoin='round';
+    ctx.stroke();
+
+    ctx.lineTo(marginLeft + plotW, marginTop + plotH);
+    ctx.lineTo(marginLeft, marginTop + plotH);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(140,106,47,0.07)';
+    ctx.fill();
+
+    // Latest value marker
+    const lastX = marginLeft + plotW;
+    const lastY = marginTop + plotH - ((vals[n-1]-lo)/(hi-lo)) * plotH;
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 3, 0, Math.PI*2);
+    ctx.fillStyle = '#8C6A2F';
+    ctx.fill();
+  }
+
+  async function loadAll(manual){
+    try{
+      setLive(false);
+      const [oz, fx] = await Promise.all([fetchGold(), fetchFx()]);
+      state.prevOzUsd = state.ozUsd;
+      state.ozUsd = oz;
+      state.usdBtn = fx;
+      state.history.push({t:Date.now(), ozUsd:oz});
+      if(state.history.length > 200) state.history.shift();
+      setLive(true);
+      render();
+      if(manual) toast('Prices refreshed');
+    }catch(e){
+      setLive(false);
+      $('ozSub').textContent = 'Could not reach price feed — retrying…';
+      if(manual) toast('Refresh failed — will retry automatically');
+    }
+  }
+
+  loadAll();
+  setInterval(loadAll, 15000);
+  renderFriends();
+
+  // ---- PWA: service worker + install prompt ----
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    });
+  }
+
+  let deferredPrompt = null;
+  const installBtn = $('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block';
+  });
+
+  installBtn?.addEventListener('click', async () => {
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if(outcome === 'accepted') toast('Installed — find it on your home screen');
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+    toast('Ter Tracker installed');
+  });
+})();
+</script>
+</body>
+</html>
